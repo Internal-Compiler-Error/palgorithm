@@ -1,17 +1,29 @@
 from __future__ import annotations
 
-import turtle
-from typing import Tuple
-
 
 class Root:
     def __init__(self):
-        self.left = None
-        self.right = None
-        self.parent = None
+        self.child = None
+        self.parent = self
 
     def traverse(self):
         traverse(self.left)
+
+    @property
+    def left(self):
+        return self.child
+
+    @left.setter
+    def left(self, value):
+        self.child = value
+
+    @property
+    def right(self):
+        return self.child
+
+    @right.setter
+    def right(self, value):
+        self.child = value
 
 class Node:
     def __init__(self, parent: Node | Root, key):
@@ -141,8 +153,6 @@ def insert(t: Root, key):
     fixup_tree(x.parent)
 
 def delete(t: Root, key):
-    root = t
-
     parent = None
     t = t.left
     while t:
@@ -158,11 +168,11 @@ def delete(t: Root, key):
     if parent is None: return None # deleting the root node
 
     if t.left is None:
-        transplant(root, t, t.right)
+        transplant(t, t.right)
         fixup_tree(t.parent)
         return None
     elif t.right is None:
-        transplant(root, t, t.left)
+        transplant(t, t.left)
         fixup_tree(t.parent)
         return None
     else: # both children are present
@@ -172,11 +182,11 @@ def delete(t: Root, key):
             y = y.left
 
         if y != t.right:
-            transplant(root, y, y.right)
+            transplant(y, y.right)
             y.right = t.right
             y.right.parent = y
 
-        transplant(root, t, y)
+        transplant(t, y)
         y.left = t.left
         y.left.parent = y
 
@@ -225,11 +235,8 @@ def fixup_subtree(t: Node):
 """
 Replaces the subtree rooted at u with the one rooted at v
 """
-def transplant(t: Root, u: Node, v: Node | None):
-    if u.left == u.right:
-        t.left = v
-        t.right = v
-    elif u == u.parent.left:
+def transplant(u: Node, v: Node | None):
+    if u == u.parent.left:
         u.parent.left = v
     else: # u == u.parent.right:
         u.parent.right = v
@@ -248,7 +255,7 @@ def fixup_tree(t: Node | Root):
     if skew_metric not in [-1, 0, 1]:
         fixup_subtree(t)
 
-    if t.left != t.right: # stop at root node
+    if t.parent != t: # stop at root node
         fixup_tree(t.parent)
 
 
