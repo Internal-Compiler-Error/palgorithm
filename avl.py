@@ -281,7 +281,7 @@ def insert_reversed():
 
     traverse(t)
 
-def delete_shit():
+def delete_stuff():
     t = None
     t = insert(t, 3)
     t = insert(t, 2)
@@ -297,6 +297,6 @@ if __name__ == "__main__":
     #insert_sorted()
     #insert_reversed()
 
-    delete_shit()
+
 
 
