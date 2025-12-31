@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from math import ceil, floor
+
 
 class Root:
     def __init__(self):
@@ -25,6 +27,12 @@ class Root:
     def right(self, value):
         self.child = value
 
+    def select(self, nth):
+        t = self.child
+        return select(t, nth)
+
+
+
 class Node:
     def __init__(self, parent: Node | Root, key):
         self.left: Node | None = None
@@ -33,6 +41,9 @@ class Node:
 
         self.key = key
         self.height = 1
+
+        # augmented zone
+        self.size = 1
 
 
 """
@@ -76,8 +87,8 @@ def rot_right(tree: Node):
         c.parent = y
 
 
-    update_height(y)
-    update_height(x)
+    update_statistic(y)
+    update_statistic(x)
 
 
 """
@@ -120,8 +131,17 @@ def rot_left(tree: Node):
     if b:
         b.parent = x
 
-    update_height(x)
-    update_height(y)
+    update_statistic(x)
+    update_statistic(y)
+
+def select(t: Node, nth):
+    rank = t.left.size + 1 if t.left is not None else 1
+    if nth == rank:
+        return t.key
+    elif nth < rank:
+        return select(t.left, nth)
+    else: # nth > rank
+        return select(t.right, nth - rank)
 
 
 """
@@ -249,7 +269,7 @@ def transplant(u: Node, v: Node | None):
 Assuming all levels below tree t are height balanced, fix any invariants that t might have, and all of t's parent tree.
 """
 def fixup_tree(t: Node | Root):
-    update_height(t)
+    update_statistic(t)
     skew_metric = skew(t)
 
     if skew_metric not in [-1, 0, 1]:
@@ -258,12 +278,21 @@ def fixup_tree(t: Node | Root):
     if t.parent != t: # stop at root node
         fixup_tree(t.parent)
 
+def update_statistic(t: Node):
+    update_height(t)
+    update_size(t)
 
 def update_height(t: Node | None):
     left = t.left.height if t.left else 0
     right = t.right.height if t.right else 0
 
     t.height = 1 + max(left, right)
+
+def update_size(t: Node):
+    left = t.left.size if t.left else 0
+    right = t.right.size if t.right else 0
+
+    t.size = left + right + 1
 
 #################### TESTS  #########################
 def test_single_node():
@@ -311,6 +340,18 @@ def test_delete_stuff():
     delete(t, 3)
     t.traverse()
 
+def test_find_median():
+    t = Root()
+    insert(t, -1)
+    insert(t, -2)
+    insert(t, -3)
+    insert(t, -4)
+    # insert(t, -5)
+    n = t.left.size
+    print(t.left.size)
+    upper_median = ceil((n + 1) / 2)
+    lower_median = floor((n + 1) / 2)
+    print(f"{upper_median=}, {lower_median=}")
 
 
 if __name__ == "__main__":
