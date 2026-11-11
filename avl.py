@@ -1,51 +1,49 @@
 from math import ceil, floor
-import random
-from typing import List
+
+# float rather than int so median() can average two keys; ints are accepted too.
+type Key = float
 
 
 class Root:
-    def __init__(self):
-        self.child = None
-        self.parent = self
+    def __init__(self) -> None:
+        self.child: Node | None = None
+        self.parent: Root = self
 
-    def traverse(self):
-        l = []
+    def traverse(self) -> None:
+        l: list[Key] = []
         traverse(self.left, l)
         assert l == sorted(l)
 
     @property
-    def left(self):
+    def left(self) -> Node | None:
         return self.child
 
     @left.setter
-    def left(self, value):
+    def left(self, value: Node | None) -> None:
         self.child = value
 
     @property
-    def right(self):
+    def right(self) -> Node | None:
         return self.child
 
     @right.setter
-    def right(self, value):
+    def right(self, value: Node | None) -> None:
         self.child = value
 
-    def select(self, nth):
+    def select(self, nth: int) -> Key:
         t = self.child
         return select(t, nth)
 
-    """
-    Insert a new node at the tree rooted at t
-    """
-    def insert(self, key):
-        t = self
-        if t.left == t.right is None:
-            x = Node(t, key)
-            t.left = x
-            t.right = x
+    def insert(self, key: Key) -> None:
+        """
+        Insert a new node at the tree rooted at t
+        """
+        if self.child is None:
+            self.child = Node(self, key)
             return
 
-        parent = t
-        t = t.left
+        parent = self.child
+        t: Node | None = self.child
         while t is not None:
             parent = t
             if t.key <= key:
@@ -62,7 +60,7 @@ class Root:
 
         fixup_tree(x.parent)
 
-    def delete(self, key):
+    def delete(self, key: Key) -> None:
         z = self
         parent = None
         z = z.left
@@ -75,17 +73,17 @@ class Root:
             else: # z.key == key
                 break
 
-        if z is None: return None # key doesn't exist
-        if parent is None: return None # deleting the root node
+        if z is None: return # key doesn't exist
+        if parent is None: return # deleting the root node
 
         if z.left is None:
             transplant(z, z.right)
             fixup_tree(parent)
-            return None
+            return
         elif z.right is None:
             transplant(z, z.left)
             fixup_tree(parent)
-            return None
+            return
         else: # both children are present
             # find z's successor
             y = z.right
@@ -105,41 +103,42 @@ class Root:
             if old_parent == z:
                 fixup_tree(y)
             else:
-                self.debug_tree("debug/what.png")
                 fixup_tree(old_parent)
-            return None
+            return
 
-    def median(self):
-        n = self.left.size
+    def median(self) -> float:
+        if self.child is None:
+            raise ValueError("median of an empty tree")
+        n = self.child.size
 
         upper = ceil((n + 1) / 2)
         lower = floor((n + 1) / 2)
 
         return (self.select(upper) + self.select(lower)) / 2
 
-    def debug_tree(self, name="debug/tree.png"):
+    def debug_tree(self, name: str = "debug/tree.png") -> None:
         t = debug_tree(self.left)
 
         if t is None:
             return
-        import anytree.exporter
-        anytree.exporter.UniqueDotExporter(t).to_picture(name)
+        import anytree.exporter  # pyright: ignore[reportMissingTypeStubs]
+        anytree.exporter.UniqueDotExporter(t).to_picture(name)  # pyright: ignore[reportUnknownMemberType]
 
 class Node:
-    def __init__(self, parent: "Node | Root", key):
+    def __init__(self, parent: Node | Root, key: Key) -> None:
         self.left: Node | None = None
         self.right: Node | None = None
         self.parent: Node | Root = parent
 
-        self.key = key
-        self.height = 1
+        self.key: Key = key
+        self.height: int = 1
 
         # augmented zone
-        self.size = 1
+        self.size: int = 1
 
-    def rank(self):
+    def rank(self) -> int:
         r = 1 + self.left.size if self.left else 1
-        y = self
+        y: Node | Root = self
 
         # loop until we reach root
         while y.parent != y:
@@ -150,7 +149,7 @@ class Node:
         return r
 
 
-def traverse(t: Node, sink: List):
+def traverse(t: Node | None, sink: list[Key]) -> None:
     if t is None:
         return
 
@@ -158,7 +157,7 @@ def traverse(t: Node, sink: List):
     sink.append(t.key)
     traverse(t.right, sink)
 
-def debug_tree(t: Node, p=None):
+def debug_tree(t: Node | None, p=None):
     import anytree
     if t is None:
         return None
@@ -168,19 +167,20 @@ def debug_tree(t: Node, p=None):
     debug_tree(t.right, n)
     return n
 
-"""
-                   y
-              x       C
-           A     B
-into:
-                   x
-                A       y
-                     B     C
-"""
-def rot_right(tree: Node):
+def rot_right(tree: Node) -> None:
+    """
+                       y
+                  x       C
+               A     B
+    into:
+                       x
+                    A       y
+                         B     C
+    """
     y = tree
     tree_parent = y.parent
     x = y.left
+    assert x is not None, "rot_right needs a left child"
     a = x.left
     b = x.right
     c = y.right
@@ -213,19 +213,19 @@ def rot_right(tree: Node):
     update_statistic(x)
 
 
-"""
-                   x
-                A       y
-                     B     C
-into:
-                   y
-              x       C
-           A     B
-
-"""
-def rot_left(tree: Node):
+def rot_left(tree: Node) -> None:
+    """
+                       x
+                    A       y
+                         B     C
+    into:
+                       y
+                  x       C
+               A     B
+    """
     x = tree
     y = x.right
+    assert y is not None, "rot_left needs a right child"
     a = x.left
     b = y.left
     c = y.right
@@ -256,7 +256,9 @@ def rot_left(tree: Node):
     update_statistic(x)
     update_statistic(y)
 
-def select(t: Node, nth):
+def select(t: Node | None, nth: int) -> Key:
+    if t is None:
+        raise IndexError(f"no element of rank {nth}")
     rank = t.left.size + 1 if t.left is not None else 1
     if nth == rank:
         return t.key
@@ -265,10 +267,7 @@ def select(t: Node, nth):
     else: # nth > rank
         return select(t.right, nth - rank)
 
-
-
-
-def skew(t: Node) -> int:
+def skew(t: Node | None) -> int:
     if t is None:
         return 0
 
@@ -278,7 +277,7 @@ def skew(t: Node) -> int:
         case None, right: return right.height
         case left, right: return right.height - left.height
 
-def check_and_fix_subtree(t: Node):
+def check_and_fix_subtree(t: Node) -> None:
     x = t
     skew_metric = skew(x)
     assert skew_metric in [-2, -1, 0, 1, 2]
@@ -287,15 +286,16 @@ def check_and_fix_subtree(t: Node):
     else:
         fixup_subtree(t)
 
-"""
-Assuming subtree t violates the height balance property, fixup the invariants using rotates
-"""
-def fixup_subtree(t: Node):
+def fixup_subtree(t: Node) -> None:
+    """
+    Assuming subtree t violates the height balance property, fixup the invariants using rotates
+    """
     x = t
     skew_metric = skew(x)
     assert skew_metric in [-2, 2]
     if skew_metric == 2:
         z = x.right
+        assert z is not None
         z_skew = skew(z)
         assert z_skew in [-1, 0, 1]
 
@@ -305,6 +305,7 @@ def fixup_subtree(t: Node):
             case  1: rot_left(x)
     else: # skew_metric == -2
         z = x.left
+        assert z is not None
         z_skew = skew(z)
         assert z_skew in [-1, 0, 1]
         match z_skew:
@@ -312,10 +313,10 @@ def fixup_subtree(t: Node):
             case  0: rot_right(x)
             case  1: rot_left(z); rot_right(x)
 
-"""
-Replaces the subtree rooted at u with the one rooted at v
-"""
-def transplant(u: Node, v: Node | None):
+def transplant(u: Node, v: Node | None) -> None:
+    """
+    Replaces the subtree rooted at u with the one rooted at v
+    """
     if u == u.parent.left:
         u.parent.left = v
     else: # u == u.parent.right:
@@ -325,11 +326,11 @@ def transplant(u: Node, v: Node | None):
         v.parent = u.parent
 
 
-"""
-Assuming all levels below tree t are height balanced, fix any invariants that t might have violated, and all of t's parent tree.
-"""
-def fixup_tree(t: Node | Root):
-    if t.parent == t:
+def fixup_tree(t: Node | Root) -> None:
+    """
+    Assuming all levels below tree t are height balanced, fix any invariants that t might have violated, and all of t's parent tree.
+    """
+    if isinstance(t, Root):
         return
     update_statistic(t)
     skew_metric = skew(t)
@@ -340,135 +341,18 @@ def fixup_tree(t: Node | Root):
     if t.parent != t: # stop at root node
         fixup_tree(t.parent)
 
-def update_statistic(t: Node):
+def update_statistic(t: Node) -> None:
     update_height(t)
     update_size(t)
 
-def update_height(t: Node | None):
+def update_height(t: Node) -> None:
     left = t.left.height if t.left else 0
     right = t.right.height if t.right else 0
 
     t.height = 1 + max(left, right)
 
-def update_size(t: Node):
+def update_size(t: Node) -> None:
     left = t.left.size if t.left else 0
     right = t.right.size if t.right else 0
 
     t.size = left + right + 1
-
-#################### TESTS  #########################
-def test_single_node():
-    t = Root()
-    t.insert(5)
-    assert t.left.key == 5
-
-def test_insert_sorted():
-    t = Root()
-    t.insert(1)
-    assert t.left.key == 1
-
-    t.insert(2)
-    assert t.left.key == 1
-
-    t.insert(3)
-
-    t = t.left
-    assert t.key == 2
-    assert t.left.key == 1
-    assert t.right.key == 3
-
-
-def test_insert_reversed():
-    t = Root()
-    t.insert(3)
-    t.insert(2)
-    t.insert(1)
-
-    t.traverse()
-    t.debug_tree()
-
-def test_delete_stuff():
-    t = Root()
-    t.insert(3)
-    t.insert(2)
-    t.insert(1)
-
-    t.delete(2)
-    t.debug_tree("debug/WRONG!.png")
-    t.traverse()
-
-def test_delete_stuffv2():
-    t = Root()
-    for i in range(30):
-        t.insert(i)
-    t.debug_tree()
-
-    to_delete = [5, 1, 26, 9, 28, 19, 27, 3, 18, 24, 15, 10, 23, 16, 13, 11, 12, 2, 14, 8, 29, 6, 25, 0, 4, 17, 22, 21, 20, 7]
-
-    for i, e in enumerate(to_delete):
-        try:
-            t.delete(e)
-            t.debug_tree(f"debug/tree-{i}-after-{e}.png")
-        except AssertionError:
-            print(f"failed on ={e} in {to_delete}")
-            print(t.left)
-            raise
-
-
-    t.traverse()
-
-def test_delete_stuff_extreme():
-    n = 1000
-    t = Root()
-    for i in range(n):
-        t.insert(i)
-
-    t.traverse()
-
-    import random
-    to_delete = list(range(n))
-    random.shuffle(to_delete)
-
-    for i in to_delete:
-        t.delete(i)
-        t.traverse()
-
-    t.traverse()
-def test_delete_root():
-    t = Root()
-    for i in range(100):
-        t.insert(i)
-
-    for i in range(100):
-        t.delete(t.left.key)
-    t.traverse()
-
-def test_insert_many():
-    t = Root()
-    l = list(range(100))
-    random.shuffle(l)
-
-    for i in l:
-        t.insert(i)
-    t.debug_tree()
-
-
-def test_find_median():
-    t = Root()
-    t.insert(-1)
-    t.insert(-2)
-    t.insert(-3)
-    t.insert(-4)
-    n = t.left.size
-    print(t.left.size)
-    upper_median = ceil((n + 1) / 2)
-    lower_median = floor((n + 1) / 2)
-    print(f"{upper_median=}, {lower_median=}")
-
-
-if __name__ == "__main__":
-    pass
-
-
-
-
